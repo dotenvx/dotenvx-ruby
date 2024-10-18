@@ -9,7 +9,7 @@ Gem::Specification.new "dotenvx-rails" do |spec|
   spec.summary       = %q{[dotenvx.com] a better dotenv–from the creator of `dotenv`}
   spec.description   = %q{[dotenvx.com] a better dotenv–from the creator of `dotenv`}
   spec.homepage      = "https://github.com/dotenvx/dotenvx-ruby"
-  spec.license       = "BSD-3"
+  spec.license       = "BSD-3-Clause"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.3.0")
 
   spec.metadata["homepage_uri"] = spec.homepage
