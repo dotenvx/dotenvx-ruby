@@ -15,7 +15,7 @@
 
 ### Quickstart [![Gem Version](https://badge.fury.io/rb/dotenvx.svg)](https://badge.fury.io/rb/dotenvx)
 
-Install and use it in code just like ruby `dotenv`.
+Install and use it in code just like `dotenv`.
 
 ```sh
 gem install dotenvx
