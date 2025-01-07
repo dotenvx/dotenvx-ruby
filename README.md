@@ -1,6 +1,8 @@
-> [!WARNING]
+> [!IMPORTANT]
 >
-> Warning: work in progress. until complete, please use [github.com/dotenvx/dotenvx](https://github.com/dotenvx/dotenvx) directly. [ruby examples](https://dotenvx.com/docs/languages/ruby)
+> Warning: work in progress. until complete, please use [github.com/dotenvx/dotenvx](https://github.com/dotenvx/dotenvx) directly.
+>
+> see [ruby examples](https://dotenvx.com/docs/languages/ruby)
 >
 
 ---
