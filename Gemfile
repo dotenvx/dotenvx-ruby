@@ -4,5 +4,5 @@ source "https://rubygems.org"
 gemspec name: "dotenvx"
 gemspec name: "dotenvx-rails"
 
-gem "rake", "~> 12.0"
+gem "rake", "~> 13.0"
 gem "rspec", "~> 3.0"
