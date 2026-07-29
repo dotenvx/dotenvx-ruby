@@ -20,11 +20,10 @@ jobs:
         ruby-version: ["3.1", "3.4"]
     steps:
       - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
+      - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
-      - uses: dtolnay/rust-toolchain@stable
       - run: bundle exec rake
       - run: cargo fmt --check
       - run: cargo clippy --workspace --all-features --locked -- -D warnings
@@ -49,11 +48,10 @@ jobs:
             artifact: x64-mingw-ucrt
     steps:
       - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
+      - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
         with:
           ruby-version: "3.1"
           bundler-cache: true
-      - uses: dtolnay/rust-toolchain@stable
       - name: Check tag version
         shell: bash
         run: |
