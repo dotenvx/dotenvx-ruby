@@ -68,8 +68,8 @@ long-lived API-key secret is needed.
 After updating both version sources and the changelog:
 
 ```sh
-git tag v2.0.0
-git push origin v2.0.0
+git tag v4.0.0
+git push origin v4.0.0
 ```
 
 The tag must match `Dotenvx::VERSION`. CI verifies this before packaging.
