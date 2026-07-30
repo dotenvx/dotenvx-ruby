@@ -6,6 +6,11 @@
 /pkg/
 /spec/reports/
 /tmp/
+/target/
+/lib/dotenvx/dotenvx_native.bundle
+/lib/dotenvx/dotenvx_native.dll
+/lib/dotenvx/dotenvx_native.so
+/ext/dotenvx/Makefile
 
 # rspec failure tracking
 .rspec_status

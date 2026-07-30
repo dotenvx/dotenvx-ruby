@@ -1,4 +1,7 @@
 require "dotenvx"
+require "active_support/notifications"
+require "rails/railtie"
+require "pathname"
 
 # Fix for rake tasks loading in development
 #
@@ -30,9 +33,30 @@ rescue LoadError, ArgumentError
 end
 
 module Dotenvx
-  class Railtie
+  class Railtie < Rails::Railtie
+    config.before_configuration { Dotenvx::Railtie.instance.load }
+
     def load
       Dotenvx.load(*dotenvx_files)
+    end
+
+    private
+
+    def dotenvx_files
+      environment = Rails.env
+      files = [
+        root.join(".env.#{environment}.local")
+      ]
+      files << root.join(".env.local") unless environment == "test"
+      files.concat([
+        root.join(".env.#{environment}"),
+        root.join(".env")
+      ])
+      files
+    end
+
+    def root
+      Pathname.new(Rails.root || ENV["RAILS_ROOT"] || Dir.pwd)
     end
   end
 end

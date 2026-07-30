@@ -14,8 +14,8 @@ RSpec.configure do |config|
   end
 
   # Restore the state of ENV after each spec
-  config.before { @env_keys = ENV.keys }
-  config.after { ENV.delete_if { |k, _v| !@env_keys.include?(k) } }
+  config.before { @env_before_example = ENV.to_h }
+  config.after { ENV.replace(@env_before_example) }
 end
 
 def fixture_path(name)
