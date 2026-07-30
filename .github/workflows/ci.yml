@@ -69,9 +69,35 @@ jobs:
           name: gem-${{ matrix.artifact }}
           path: pkg/*.gem
 
+  rails-gem:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - name: Check tag version
+        shell: bash
+        run: |
+          expected="${GITHUB_REF_NAME#v}"
+          actual="$(ruby -Ilib -r dotenvx/version -e 'print Dotenvx::VERSION')"
+          test "$actual" = "$expected"
+      - name: Build Rails gem
+        run: |
+          mkdir -p pkg
+          gem build dotenvx-rails.gemspec
+          mv dotenvx-rails-*.gem pkg/
+          gem specification pkg/dotenvx-rails-*.gem
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gem-rails
+          path: pkg/*.gem
+
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: native-gems
+    needs: [native-gems, rails-gem]
     runs-on: ubuntu-latest
     environment: release
     permissions:

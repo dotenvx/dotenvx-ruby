@@ -55,7 +55,7 @@ the existing `dotenvx` gem, and publish all of them to RubyGems. No additional
 gem is published.
 
 Before the first automated release, add a trusted publisher for the `dotenvx`
-gem on RubyGems.org with:
+and `dotenvx-rails` gems on RubyGems.org with:
 
 - repository owner: `dotenvx`
 - repository name: `dotenvx-ruby`
