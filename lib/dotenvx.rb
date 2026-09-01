@@ -13,14 +13,24 @@ module Dotenvx
     end
   end
 
+  class ParseError < RuntimeError
+    attr_reader :code
+
+    def initialize(code, message)
+      @code = code
+      super(message)
+    end
+  end
+
   class << self
     attr_accessor :instrumenter
 
-    def load(*filenames, overwrite: false, ignore: true)
+    def load(*filenames, overwrite: false, ignore: true, strict: false)
       env, injected_keys, loaded_paths = parse_files(
         *filenames,
         overwrite: overwrite,
-        ignore: ignore
+        ignore: ignore,
+        strict: strict
       )
       changed = update(env, overwrite: overwrite)
       log_injected(injected_keys, loaded_paths)
@@ -28,7 +38,7 @@ module Dotenvx
     end
 
     def load!(*filenames)
-      load(*filenames, ignore: false)
+      load(*filenames, ignore: false, strict: true)
     end
 
     def overwrite(*filenames)
@@ -37,12 +47,17 @@ module Dotenvx
     alias overload overwrite
 
     def overwrite!(*filenames)
-      load(*filenames, overwrite: true, ignore: false)
+      load(*filenames, overwrite: true, ignore: false, strict: true)
     end
     alias overload! overwrite!
 
-    def parse(*filenames, overwrite: false, ignore: true)
-      parse_files(*filenames, overwrite: overwrite, ignore: ignore).first
+    def parse(*filenames, overwrite: false, ignore: true, strict: false)
+      parse_files(
+        *filenames,
+        overwrite: overwrite,
+        ignore: ignore,
+        strict: strict
+      ).first
     end
 
     def update(env = {}, overwrite: false)
@@ -72,7 +87,7 @@ module Dotenvx
 
     private
 
-    def parse_files(*filenames, overwrite: false, ignore: true)
+    def parse_files(*filenames, overwrite: false, ignore: true, strict: false)
       filenames = [".env"] if filenames.empty?
       filenames = filenames.flatten.reverse if overwrite
 
@@ -84,16 +99,17 @@ module Dotenvx
         begin
           source = File.binread(path).sub(/\A\xEF\xBB\xBF/, "").force_encoding(Encoding::UTF_8)
         rescue Errno::ENOENT, Errno::EISDIR
-          raise unless ignore
+          raise unless ignore_missing?(ignore)
           next accumulator
         end
 
-        parsed, injected = Native.parse_dotenv(JSON.generate(
+        parsed, injected, errors = Native.parse_dotenv(JSON.generate(
           source: source,
           process_env: process_env,
           overwrite: overwrite == true,
           key_files: key_files(path)
         ))
+        handle_errors(errors, ignore: ignore, strict: strict)
         parsed = parsed.to_h
         injected.each { |key, _value| injected_keys[key] = true }
         loaded_paths << path
@@ -103,6 +119,21 @@ module Dotenvx
         accumulator
       end
       [values, injected_keys.keys, loaded_paths]
+    end
+
+    def handle_errors(errors, ignore:, strict:)
+      ignored_codes = Array(ignore).grep(String)
+      errors.each do |code, message|
+        next if ignored_codes.include?(code)
+
+        raise ParseError.new(code, message) if strict
+
+        warn "☠ #{message}"
+      end
+    end
+
+    def ignore_missing?(ignore)
+      ignore == true || Array(ignore).map(&:to_s).include?("MISSING_ENV_FILE")
     end
 
     def log_injected(injected_keys, loaded_paths)

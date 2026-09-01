@@ -73,6 +73,31 @@ RSpec.describe Dotenvx do
     end
   end
 
+  it "warns and continues when a value cannot be decrypted" do
+    with_env_file("HELLO=#{encrypted_world}\n") do |path|
+      expect { described_class.load(path) }
+        .to output(
+          "☠ [DECRYPTION_FAILED] could not decrypt HELLO\n" \
+          "⟐ injected env (1) from #{path}\n"
+        ).to_stderr
+      expect(ENV["HELLO"]).to eq(encrypted_world)
+    end
+  end
+
+  it "supports strict decryption errors" do
+    with_env_file("HELLO=#{encrypted_world}\n") do |path|
+      expect { described_class.load(path, strict: true) }
+        .to raise_error(Dotenvx::ParseError, /DECRYPTION_FAILED/)
+    end
+  end
+
+  it "ignores selected error codes" do
+    with_env_file("HELLO=#{encrypted_world}\n") do |path|
+      expect { described_class.load(path, ignore: ["DECRYPTION_FAILED"]) }
+        .to output("⟐ injected env (1) from #{path}\n").to_stderr
+    end
+  end
+
   it "ignores missing files by default and raises through load!" do
     missing = File.join(Dir.tmpdir, "dotenvx-does-not-exist")
 

@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 type StringPairs = Vec<(String, String)>;
+type ErrorPairs = Vec<(String, String)>;
 
 fn runtime_error(message: impl Into<String>) -> Error {
     let ruby = Ruby::get().expect("Ruby VM is not available");
@@ -21,18 +22,17 @@ fn scalar_values(values: HashMap<String, Value>) -> StringPairs {
         .collect()
 }
 
-fn parse_result(result: ParseResult) -> Result<(StringPairs, StringPairs), Error> {
-    if !result.errors.is_empty() {
-        let message = result
-            .errors
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join("\n");
-        return Err(runtime_error(message));
-    }
-
-    Ok((scalar_values(result.parsed), scalar_values(result.injected)))
+fn parse_result(result: ParseResult) -> (StringPairs, StringPairs, ErrorPairs) {
+    let errors = result
+        .errors
+        .iter()
+        .map(|error| (error.code().to_owned(), error.to_string()))
+        .collect();
+    (
+        scalar_values(result.parsed),
+        scalar_values(result.injected),
+        errors,
+    )
 }
 
 #[derive(Deserialize)]
@@ -43,7 +43,7 @@ struct ParseInput {
     key_files: Vec<String>,
 }
 
-fn parse_dotenv(input_json: String) -> Result<(StringPairs, StringPairs), Error> {
+fn parse_dotenv(input_json: String) -> Result<(StringPairs, StringPairs, ErrorPairs), Error> {
     let input = serde_json::from_str::<ParseInput>(&input_json)
         .map_err(|error| runtime_error(error.to_string()))?;
     let process_env = input.process_env;
@@ -54,7 +54,7 @@ fn parse_dotenv(input_json: String) -> Result<(StringPairs, StringPairs), Error>
     })
     .map_err(|error| runtime_error(error.to_string()))?;
 
-    parse_result(parse(
+    Ok(parse_result(parse(
         &input.source,
         &ParseOptions {
             process_env,
@@ -62,7 +62,7 @@ fn parse_dotenv(input_json: String) -> Result<(StringPairs, StringPairs), Error>
             ring,
             ..Default::default()
         },
-    ))
+    )))
 }
 
 #[magnus::init]
