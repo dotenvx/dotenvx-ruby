@@ -62,9 +62,21 @@ jobs:
       - run: bundle exec rake package:native
       - name: Test packaged gem
         shell: bash
+        env:
+          SMOKE_VALUE: World
         run: |
           gem install --local --ignore-dependencies pkg/*.gem
-          ruby -e 'require "dotenvx"; abort unless Dotenvx::VERSION == ENV.fetch("GITHUB_REF_NAME").delete_prefix("v")'
+          ruby -e 'require "dotenvx"; abort unless Dotenvx.parse("spec/fixtures/process_env.env", ignore: false) == {"HELLO" => "World"}'
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - name: Test packaged gem on a newer Ruby
+        shell: bash
+        env:
+          SMOKE_VALUE: World
+        run: |
+          gem install --local --ignore-dependencies pkg/*.gem
+          ruby -e 'require "dotenvx"; abort unless Dotenvx.parse("spec/fixtures/process_env.env", ignore: false) == {"HELLO" => "World"}'
       - uses: actions/upload-artifact@v7
         with:
           name: gem-${{ matrix.artifact }}

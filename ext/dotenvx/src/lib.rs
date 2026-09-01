@@ -1,5 +1,6 @@
 use dotenvx_primitives::{keyring, parse, KeyringOptions, ParseOptions, ParseResult, Value};
 use magnus::{function, prelude::*, Error, Ruby};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -34,25 +35,30 @@ fn parse_result(result: ParseResult) -> Result<(StringPairs, StringPairs), Error
     Ok((scalar_values(result.parsed), scalar_values(result.injected)))
 }
 
-fn parse_dotenv(
+#[derive(Deserialize)]
+struct ParseInput {
     source: String,
-    process_env: StringPairs,
+    process_env: HashMap<String, String>,
     overwrite: bool,
     key_files: Vec<String>,
-) -> Result<(StringPairs, StringPairs), Error> {
-    let process_env = process_env.into_iter().collect::<HashMap<_, _>>();
+}
+
+fn parse_dotenv(input_json: String) -> Result<(StringPairs, StringPairs), Error> {
+    let input = serde_json::from_str::<ParseInput>(&input_json)
+        .map_err(|error| runtime_error(error.to_string()))?;
+    let process_env = input.process_env;
     let ring = keyring(&KeyringOptions {
         process_env: process_env.clone(),
-        key_files: key_files.into_iter().map(PathBuf::from).collect(),
+        key_files: input.key_files.into_iter().map(PathBuf::from).collect(),
         ..Default::default()
     })
     .map_err(|error| runtime_error(error.to_string()))?;
 
     parse_result(parse(
-        &source,
+        &input.source,
         &ParseOptions {
             process_env,
-            overload: overwrite,
+            overload: input.overwrite,
             ring,
             ..Default::default()
         },
@@ -63,6 +69,6 @@ fn parse_dotenv(
 fn init(ruby: &Ruby) -> Result<(), Error> {
     let dotenvx = ruby.define_module("Dotenvx")?;
     let native = dotenvx.define_module("Native")?;
-    native.define_singleton_method("parse_dotenv", function!(parse_dotenv, 4))?;
+    native.define_singleton_method("parse_dotenv", function!(parse_dotenv, 1))?;
     Ok(())
 }

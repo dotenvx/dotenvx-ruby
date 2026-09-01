@@ -1,5 +1,6 @@
 require "dotenvx/version"
 require "dotenvx/dotenvx_native"
+require "json"
 
 module Dotenvx
   class MissingKeys < RuntimeError
@@ -47,12 +48,12 @@ module Dotenvx
           next values
         end
 
-        parsed, = Native.parse_dotenv(
-          source,
-          process_env.to_a,
-          overwrite == true,
-          key_files(path)
-        )
+        parsed, = Native.parse_dotenv(JSON.generate(
+          source: source,
+          process_env: process_env,
+          overwrite: overwrite == true,
+          key_files: key_files(path)
+        ))
         parsed = parsed.to_h
         process_env.merge!(parsed)
         values.merge!(parsed)

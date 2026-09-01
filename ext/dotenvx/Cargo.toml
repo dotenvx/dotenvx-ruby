@@ -1,6 +1,6 @@
 [package]
 name = "dotenvx_native"
-version = "4.0.1"
+version = "4.0.2"
 edition = "2021"
 rust-version = "1.83"
 publish = false
@@ -12,4 +12,6 @@ crate-type = ["cdylib"]
 [dependencies]
 dotenvx-primitives = "=2.2.0"
 magnus = "0.8"
-rb-sys = { version = "0.9.128", default-features = false, features = ["stable-api-compiled-fallback"] }
+rb-sys = { version = "0.9.128", default-features = false, features = ["stable-api-compiled-force"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
