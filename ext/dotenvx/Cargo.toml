@@ -10,6 +10,6 @@ name = "dotenvx_native"
 crate-type = ["cdylib"]
 
 [dependencies]
-dotenvx-primitives = "=2.1.2"
+dotenvx-primitives = "=2.2.0"
 magnus = "0.8"
 rb-sys = { version = "0.9.128", default-features = false, features = ["stable-api-compiled-fallback"] }

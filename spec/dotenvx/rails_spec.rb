@@ -37,6 +37,13 @@ RSpec.describe Dotenvx::Railtie do
     end
   end
 
+  context "when dotenvx-rails is required" do
+    it "loads before Rails application configuration starts" do
+      expect(Dotenvx::Railtie.instance).to receive(:load)
+      load File.expand_path("../../lib/dotenvx-rails.rb", __dir__)
+    end
+  end
+
   # context "load" do
   #   before { Dotenvx::Railtie.load }
 

@@ -44,6 +44,17 @@ RSpec.describe Dotenvx do
     end
   end
 
+  it "uses the conventional .env.keys file for named environment files" do
+    Dir.mktmpdir do |directory|
+      path = File.join(directory, ".env.production")
+      File.write(path, "HELLO=#{encrypted_world}\n")
+      File.write(File.join(directory, ".env.keys"), "DOTENV_PRIVATE_KEY=#{private_key}\n")
+
+      expect(described_class.load(path)).to eq("HELLO" => "World")
+      expect(ENV["HELLO"]).to eq("World")
+    end
+  end
+
   it "ignores missing files by default and raises through load!" do
     missing = File.join(Dir.tmpdir, "dotenvx-does-not-exist")
 

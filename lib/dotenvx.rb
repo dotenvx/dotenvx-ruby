@@ -89,10 +89,9 @@ module Dotenvx
     private
 
     def key_files(path)
-      basename = File.basename(path)
-      candidates = ["#{path}.keys"]
-      candidates << File.join(File.dirname(path), ".env.keys") unless basename == ".env"
+      candidates = ["#{path}.keys", File.join(File.dirname(path), ".env.keys")]
       candidates.select { |candidate| File.file?(candidate) }
+        .uniq
     end
   end
 
