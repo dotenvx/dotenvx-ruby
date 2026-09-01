@@ -11,7 +11,8 @@ RSpec.describe Dotenvx do
     with_env_file("HELLO=World\nEXISTING=file\n") do |path|
       ENV["EXISTING"] = "environment"
 
-      expect(described_class.load(path)).to eq("HELLO" => "World")
+      expect { described_class.load(path) }
+        .to output("⟐ injected env (1) from #{path}\n").to_stderr
       expect(ENV["HELLO"]).to eq("World")
       expect(ENV["EXISTING"]).to eq("environment")
     end
@@ -21,15 +22,30 @@ RSpec.describe Dotenvx do
     with_env_file("EXISTING=file\n") do |path|
       ENV["EXISTING"] = "environment"
 
-      expect(described_class.overwrite(path)).to eq("EXISTING" => "file")
+      expect { described_class.overwrite(path) }
+        .to output("⟐ injected env (1) from #{path}\n").to_stderr
       expect(ENV["EXISTING"]).to eq("file")
     end
   end
 
   it "parses without changing ENV" do
     with_env_file("PARSED=yes\n") do |path|
+      expect { described_class.parse(path) }.not_to output.to_stderr
       expect(described_class.parse(path)).to eq("PARSED" => "yes")
       expect(ENV).not_to have_key("PARSED")
+    end
+  end
+
+  it "counts unique injected keys across readable files" do
+    Dir.mktmpdir do |directory|
+      first = File.join(directory, ".env.local")
+      second = File.join(directory, ".env")
+      File.write(first, "FIRST=one\nSHARED=local\n")
+      File.write(second, "SECOND=two\nSHARED=base\nEXISTING=file\n")
+      ENV["EXISTING"] = "environment"
+
+      expect { described_class.load(first, second) }
+        .to output("⟐ injected env (3) from #{first}, #{second}\n").to_stderr
     end
   end
 
@@ -39,7 +55,8 @@ RSpec.describe Dotenvx do
       File.write(path, "HELLO=#{encrypted_world}\n")
       File.write("#{path}.keys", "DOTENV_PRIVATE_KEY=#{private_key}\n")
 
-      expect(described_class.load(path)).to eq("HELLO" => "World")
+      expect { described_class.load(path) }
+        .to output("⟐ injected env (1) from #{path}\n").to_stderr
       expect(ENV["HELLO"]).to eq("World")
     end
   end
@@ -50,7 +67,8 @@ RSpec.describe Dotenvx do
       File.write(path, "HELLO=#{encrypted_world}\n")
       File.write(File.join(directory, ".env.keys"), "DOTENV_PRIVATE_KEY=#{private_key}\n")
 
-      expect(described_class.load(path)).to eq("HELLO" => "World")
+      expect { described_class.load(path) }
+        .to output("⟐ injected env (1) from #{path}\n").to_stderr
       expect(ENV["HELLO"]).to eq("World")
     end
   end
@@ -58,7 +76,8 @@ RSpec.describe Dotenvx do
   it "ignores missing files by default and raises through load!" do
     missing = File.join(Dir.tmpdir, "dotenvx-does-not-exist")
 
-    expect(described_class.load(missing)).to eq({})
+    expect { expect(described_class.load(missing)).to eq({}) }
+      .to output("⟐ injected env (0)\n").to_stderr
     expect { described_class.load!(missing) }.to raise_error(Errno::ENOENT)
   end
 

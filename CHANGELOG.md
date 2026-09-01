@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [Unreleased](https://github.com/dotenvx/dotenvx-ruby/compare/v4.0.0...main)
+## [Unreleased](https://github.com/dotenvx/dotenvx-ruby/compare/v4.0.4...main)
+
+## [4.0.4](https://github.com/dotenvx/dotenvx-ruby/compare/v4.0.3...v4.0.4)
+
+- Report the unique variables injected from readable dotenv files.
 
 ## [4.0.0](https://github.com/dotenvx/dotenvx-ruby/compare/v0.0.2...v4.0.0)
 

@@ -37,7 +37,10 @@ module Dotenvx
     config.before_configuration { Dotenvx::Railtie.instance.load }
 
     def load
+      return if @loaded
+
       Dotenvx.load(*dotenvx_files)
+      @loaded = true
     end
 
     private
