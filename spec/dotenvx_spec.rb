@@ -49,6 +49,14 @@ RSpec.describe Dotenvx do
     end
   end
 
+  it "decrypts with the process environment and no key file" do
+    with_env_file("HELLO=#{encrypted_world}\n") do |path|
+      ENV["DOTENV_PRIVATE_KEY"] = private_key
+      expect(File.exist?("#{path}.keys")).to eq(false)
+      expect(described_class.parse(path, strict: true)["HELLO"]).to eq("World")
+    end
+  end
+
   it "decrypts with the adjacent dotenvx key file" do
     Dir.mktmpdir do |directory|
       path = File.join(directory, ".env")
