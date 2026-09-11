@@ -1,4 +1,4 @@
-use dotenvx_primitives::{keyring, parse, KeyringOptions, ParseOptions, ParseResult, Value};
+use dotenvx_primitives::{parse, ParseOptions, ParseResult};
 use magnus::{function, prelude::*, Error, Ruby};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -12,16 +12,6 @@ fn runtime_error(message: impl Into<String>) -> Error {
     Error::new(ruby.exception_runtime_error(), message.into())
 }
 
-fn scalar_values(values: HashMap<String, Value>) -> StringPairs {
-    values
-        .into_iter()
-        .filter_map(|(key, value)| match value {
-            Value::Scalar(value) => Some((key, value)),
-            Value::Array(_) => None,
-        })
-        .collect()
-}
-
 fn parse_result(result: ParseResult) -> (StringPairs, StringPairs, ErrorPairs) {
     let errors = result
         .errors
@@ -29,8 +19,8 @@ fn parse_result(result: ParseResult) -> (StringPairs, StringPairs, ErrorPairs) {
         .map(|error| (error.code().to_owned(), error.to_string()))
         .collect();
     (
-        scalar_values(result.parsed),
-        scalar_values(result.injected),
+        result.parsed.into_iter().collect(),
+        result.injected.into_iter().collect(),
         errors,
     )
 }
@@ -47,19 +37,12 @@ fn parse_dotenv(input_json: String) -> Result<(StringPairs, StringPairs, ErrorPa
     let input = serde_json::from_str::<ParseInput>(&input_json)
         .map_err(|error| runtime_error(error.to_string()))?;
     let process_env = input.process_env;
-    let ring = keyring(&KeyringOptions {
-        process_env: process_env.clone(),
-        key_files: input.key_files.into_iter().map(PathBuf::from).collect(),
-        ..Default::default()
-    })
-    .map_err(|error| runtime_error(error.to_string()))?;
-
     Ok(parse_result(parse(
         &input.source,
         &ParseOptions {
             process_env,
             overload: input.overwrite,
-            ring,
+            key_files: input.key_files.into_iter().map(PathBuf::from).collect(),
             ..Default::default()
         },
     )))
