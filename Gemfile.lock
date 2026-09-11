@@ -1,10 +1,10 @@
 PATH
   remote: .
   specs:
-    dotenvx (4.0.5)
+    dotenvx (4.0.6)
       rb_sys (~> 0.9)
-    dotenvx-rails (4.0.5)
-      dotenvx (= 4.0.5)
+    dotenvx-rails (4.0.6)
+      dotenvx (= 4.0.6)
       railties (>= 5.0)
 
 GEM
