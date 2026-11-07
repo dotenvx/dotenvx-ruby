@@ -1,7 +1,7 @@
 # Development
 
-`dotenvx` is a mixed Ruby/Rust package. Magnus exposes the published
-`dotenvx-primitives` crate to Ruby, and `rb-sys` compiles the extension into
+`dotenvx` is a mixed Ruby/Rust package. Magnus exposes the private
+`dotenvx-ll` shared loader to Ruby, and `rb-sys` compiles the extension into
 `lib/dotenvx`.
 
 ## Setup
@@ -44,9 +44,8 @@ cargo check
 bundle install
 ```
 
-The `dotenvx-primitives` dependency is versioned independently. Update it in
-`ext/dotenvx/Cargo.toml` only when the gem should embed a newer primitives
-release.
+The shared loader owns the published `dotenvx-primitives` dependency. Update
+it in Forge when the consumers should embed a newer primitives release.
 
 ## Publishing
 
@@ -73,3 +72,15 @@ git push origin v4.0.0
 ```
 
 The tag must match `Dotenvx::VERSION`. CI verifies this before packaging.
+
+## Shared loader checkout
+
+The native extension currently depends on private `dotenvx-ll` through a local
+Cargo path. Keep this checkout beside `forge/`, which contains `dotenvx-ll/`.
+It embeds published primitives 4.x through that loader, instead of depending on
+primitives directly. Rebuild the extension after changing the loader.
+
+These are local development paths, not a finished release-distribution setup.
+Standalone CI/source-package builds need private access to the loader source
+before publishing. Do not publish `dotenvx-ll` publicly; compiled platform gems
+and wheels can embed it without distributing its Rust source.

@@ -85,7 +85,7 @@ RSpec.describe Dotenvx do
     with_env_file("HELLO=#{encrypted_world}\n") do |path|
       expect { described_class.load(path) }
         .to output(
-          "☠ [DECRYPTION_FAILED] could not decrypt HELLO\n" \
+          "☠ [DECRYPTION_FAILED] could not decrypt HELLO. fix: [https://github.com/dotenvx/dotenvx/issues/757]\n" \
           "⟐ injected env (1) from #{path}\n"
         ).to_stderr
       expect(ENV["HELLO"]).to eq(encrypted_world)
@@ -106,12 +106,33 @@ RSpec.describe Dotenvx do
     end
   end
 
-  it "ignores missing files by default and raises through load!" do
+  it "warns about missing files by default and raises through load!" do
     missing = File.join(Dir.tmpdir, "dotenvx-does-not-exist")
 
     expect { expect(described_class.load(missing)).to eq({}) }
-      .to output("⟐ injected env (0)\n").to_stderr
+      .to output(/MISSING_ENV_FILE.*\n⟐ injected env \(0\)\n/).to_stderr
     expect { described_class.load!(missing) }.to raise_error(Errno::ENOENT)
+  end
+
+
+  it "infers filenames from environment key names in the shared loader" do
+    Dir.mktmpdir do |directory|
+      Dir.chdir(directory) do
+        ENV["DOTENV_PRIVATE_KEY_PRODUCTION"] = private_key
+        File.write(".env.production", "HELLO=#{encrypted_world}\n")
+        expect(Dotenvx.parse["HELLO"]).to eq("World")
+      end
+    end
+  end
+
+  it "accepts explicit key files without Ruby-side discovery" do
+    Dir.mktmpdir do |directory|
+      Dir.chdir(directory) do
+        File.write(".env", "HELLO=#{encrypted_world}\n")
+        File.write("custom.keys", "DOTENV_PRIVATE_KEY=#{private_key}\n")
+        expect(Dotenvx.parse(".env", key_files: "custom.keys")["HELLO"]).to eq("World")
+      end
+    end
   end
 
   def with_env_file(contents)

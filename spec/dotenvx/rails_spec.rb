@@ -1,4 +1,5 @@
 require "spec_helper"
+require "tmpdir"
 require "rails"
 require "dotenvx/rails"
 
@@ -136,4 +137,23 @@ RSpec.describe Dotenvx::Railtie do
   #     end
   #   end
   # end
+
+  it "loads Rails test files through the shared selector" do
+    Dir.mktmpdir do |directory|
+      File.write(File.join(directory, ".env.test"), "LL_RAILS=shared\n")
+      File.write(File.join(directory, ".env.local"), "LL_RAILS_LOCAL=excluded\n")
+      allow(Rails).to receive(:root).and_return(Pathname.new(directory))
+      railtie = Dotenvx::Railtie.instance
+      previously_loaded = railtie.instance_variable_get(:@loaded)
+      begin
+        railtie.instance_variable_set(:@loaded, false)
+        expect { railtie.load }.to output(/injected env/).to_stderr
+        expect(ENV["LL_RAILS"]).to eq("shared")
+        expect(ENV).not_to have_key("LL_RAILS_LOCAL")
+      ensure
+        railtie.instance_variable_set(:@loaded, previously_loaded)
+      end
+    end
+  end
+
 end

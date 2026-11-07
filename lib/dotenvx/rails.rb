@@ -39,24 +39,11 @@ module Dotenvx
     def load
       return if @loaded
 
-      Dotenvx.load(*dotenvx_files)
+      Dotenvx.load(root.to_s, convention: "rails", environment: Rails.env.to_s)
       @loaded = true
     end
 
     private
-
-    def dotenvx_files
-      environment = Rails.env
-      files = [
-        root.join(".env.#{environment}.local")
-      ]
-      files << root.join(".env.local") unless environment == "test"
-      files.concat([
-        root.join(".env.#{environment}"),
-        root.join(".env")
-      ])
-      files
-    end
 
     def root
       Pathname.new(Rails.root || ENV["RAILS_ROOT"] || Dir.pwd)

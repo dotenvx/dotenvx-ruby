@@ -16,12 +16,15 @@ module Dotenvx
   class << self
     attr_accessor :instrumenter
 
-    def load(*filenames, overwrite: false, ignore: true, strict: false)
+    def load(*filenames, overwrite: false, ignore: [], strict: false, convention: nil, environment: nil, key_files: nil)
       env, injected_keys, loaded_paths = parse_files(
         *filenames,
         overwrite: overwrite,
         ignore: ignore,
-        strict: strict
+        strict: strict,
+        convention: convention,
+        environment: environment,
+        key_files: key_files
       )
       changed = update(env, overwrite: overwrite)
       log_injected(injected_keys, loaded_paths)
@@ -42,12 +45,15 @@ module Dotenvx
     end
     alias overload! overwrite!
 
-    def parse(*filenames, overwrite: false, ignore: true, strict: false)
+    def parse(*filenames, overwrite: false, ignore: [], strict: false, convention: nil, environment: nil, key_files: nil)
       parse_files(
         *filenames,
         overwrite: overwrite,
         ignore: ignore,
-        strict: strict
+        strict: strict,
+        convention: convention,
+        environment: environment,
+        key_files: key_files
       ).first
     end
 
@@ -73,53 +79,33 @@ module Dotenvx
 
     private
 
-    def parse_files(*filenames, overwrite: false, ignore: true, strict: false)
-      filenames = [".env"] if filenames.empty?
-      filenames = filenames.flatten.reverse if overwrite
-
-      process_env = ENV.to_h
-      injected_keys = {}
-      loaded_paths = []
-      values = filenames.reduce({}) do |accumulator, filename|
-        path = File.expand_path(filename)
-        begin
-          source = File.binread(path).sub(/\A\xEF\xBB\xBF/, "").force_encoding(Encoding::UTF_8)
-        rescue Errno::ENOENT, Errno::EISDIR
-          raise unless ignore_missing?(ignore)
-          next accumulator
-        end
-
-        parsed, injected, errors = Native.parse_dotenv(JSON.generate(
-          source: source,
-          process_env: process_env,
-          overwrite: overwrite == true,
-          key_files: key_files(path)
-        ))
-        handle_errors(errors, ignore: ignore, strict: strict)
-        parsed = parsed.to_h
-        injected.each { |key, _value| injected_keys[key] = true }
-        loaded_paths << path
-        process_env.merge!(parsed)
-        accumulator.merge!(parsed)
-        yield Environment.new(path, parsed) if block_given?
-        accumulator
-      end
-      [values, injected_keys.keys, loaded_paths]
-    end
-
-    def handle_errors(errors, ignore:, strict:)
+    def parse_files(*filenames, overwrite: false, ignore: [], strict: false, convention: nil, environment: nil, key_files: nil)
+      filenames = filenames.flatten
       ignored_codes = Array(ignore).grep(String)
-      errors.each do |code, message|
-        next if ignored_codes.include?(code)
-
-        raise ParseError.new(code, message) if strict
-
-        warn "☠ #{message}"
+      ignored_codes << "MISSING_ENV_FILE" if ignore == true
+      result = JSON.parse(Native.load_env(JSON.generate(
+        sources: filenames.map { |filename| { type: "file", value: filename.to_s } },
+        cwd: Dir.pwd,
+        convention: convention,
+        environment_name: environment,
+        key_files: key_files.nil? ? nil : Array(key_files).map(&:to_s),
+        process_env: ENV.to_h,
+        overload: overwrite == true,
+        strict: strict,
+        ignore: ignored_codes,
+        adjacent_keys: true
+      )))
+      result.fetch("diagnostics").each do |error|
+        if error.fetch("strict")
+          if error["code"] == "MISSING_ENV_FILE" && ignore == false
+            raise Errno::ENOENT, error["path"]
+          end
+          raise ParseError.new(error.fetch("code"), error.fetch("message"))
+        end
+        warn "☠ #{error.fetch("message")}"
       end
-    end
-
-    def ignore_missing?(ignore)
-      ignore == true || Array(ignore).map(&:to_s).include?("MISSING_ENV_FILE")
+      [result.fetch("values"), result.fetch("injected").keys,
+        result.fetch("files").map { |file| file.fetch("filepath") }]
     end
 
     def log_injected(injected_keys, loaded_paths)
@@ -137,12 +123,6 @@ module Dotenvx
       relative.start_with?("../") ? pathname.to_s : relative
     rescue ArgumentError
       pathname.to_s
-    end
-
-    def key_files(path)
-      candidates = ["#{path}.keys", File.join(File.dirname(path), ".env.keys")]
-      candidates.select { |candidate| File.file?(candidate) }
-        .uniq
     end
   end
 

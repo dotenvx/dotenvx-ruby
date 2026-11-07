@@ -224,10 +224,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "dotenvx-ll"
+version = "0.1.0"
+dependencies = [
+ "dotenvx-primitives",
+ "serde",
+]
+
+[[package]]
 name = "dotenvx-primitives"
-version = "3.3.1"
+version = "4.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "722e15cdb2b5a72c474a1195cfd57e695cfee02eced0bc7b308f6461f09b74f9"
+checksum = "b34a9d59e759d37f407d58419205e05f8912bc112b0c7a889ca71b1940848a16"
 dependencies = [
  "base64",
  "ecies",
@@ -236,6 +244,7 @@ dependencies = [
  "num-bigint",
  "rand",
  "regex",
+ "serde",
  "url",
  "zeroize",
 ]
@@ -244,10 +253,9 @@ dependencies = [
 name = "dotenvx_native"
 version = "4.0.6"
 dependencies = [
- "dotenvx-primitives",
+ "dotenvx-ll",
  "magnus",
  "rb-sys",
- "serde",
  "serde_json",
 ]
 
@@ -535,6 +543,8 @@ checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
  "hashbrown",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
