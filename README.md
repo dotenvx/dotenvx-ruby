@@ -61,12 +61,6 @@ Raise when a file is missing:
 Dotenvx.load!(".env")
 ```
 
-Require configuration keys:
-
-```ruby
-Dotenvx.require_keys("DATABASE_URL", "SECRET_KEY")
-```
-
 Encrypted values are decrypted automatically when the matching private key is
 available through the process environment, `<filename>.keys`, or `.env.keys`.
 

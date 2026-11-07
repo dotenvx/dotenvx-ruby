@@ -4,15 +4,6 @@ require "json"
 require "pathname"
 
 module Dotenvx
-  class MissingKeys < RuntimeError
-    attr_reader :keys
-
-    def initialize(keys)
-      @keys = keys
-      super("Missing required configuration keys: #{keys.join(", ")}")
-    end
-  end
-
   class ParseError < RuntimeError
     attr_reader :code
 
@@ -78,11 +69,6 @@ module Dotenvx
         changed[key] = value.to_s
       end
       changed
-    end
-
-    def require_keys(*keys)
-      missing = keys.flatten.map(&:to_s) - ENV.keys
-      raise MissingKeys, missing unless missing.empty?
     end
 
     private

@@ -114,11 +114,6 @@ RSpec.describe Dotenvx do
     expect { described_class.load!(missing) }.to raise_error(Errno::ENOENT)
   end
 
-  it "requires configuration keys" do
-    expect { described_class.require_keys("MISSING") }
-      .to raise_error(Dotenvx::MissingKeys, /MISSING/)
-  end
-
   def with_env_file(contents)
     Dir.mktmpdir do |directory|
       path = File.join(directory, ".env")
