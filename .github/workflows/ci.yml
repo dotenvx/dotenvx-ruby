@@ -1,157 +1,94 @@
-name: ci
+name: publish
+run-name: Ruby release ${{ inputs.tag || github.ref_name }}
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
-  pull_request:
-    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Forge-generated release tag (vX.Y.Z)
+        required: true
+        type: string
+      publish:
+        description: Publish missing gems after validation (false only tests)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - run: ruby .github/scripts/release.rb verify
+
   test:
+    needs: validate
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        ruby-version: ["3.1", "3.4"]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
-        with:
-          ruby-version: ${{ matrix.ruby-version }}
-          bundler-cache: true
-      - run: bundle exec rake
-      - run: cargo fmt --check
-      - run: cargo clippy --workspace --all-features --locked -- -D warnings
-
-  native-gems:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15-intel, macos-15]
+        ruby: ['3.1', '3.2', '3.3', '3.4']
         include:
-          - os: ubuntu-latest
-            artifact: x86_64-linux
+          - os: ubuntu-24.04
+            platform: x86_64-linux
           - os: ubuntu-24.04-arm
-            artifact: aarch64-linux
+            platform: aarch64-linux
           - os: macos-15-intel
-            artifact: x86_64-darwin
-          - os: macos-14
-            artifact: arm64-darwin
+            platform: x86_64-darwin
+          - os: macos-15
+            platform: arm64-darwin
     steps:
       - uses: actions/checkout@v6
-      - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
         with:
-          ruby-version: "3.1"
-          bundler-cache: true
-          cargo-cache-clean: false
-      - name: Check tag version
-        shell: bash
-        run: |
-          expected="${GITHUB_REF_NAME#v}"
-          actual="$(ruby -Ilib -r dotenvx/version -e 'print Dotenvx::VERSION')"
-          test "$actual" = "$expected"
-      - run: bundle exec rake package:native
-      - name: Test packaged gem
-        shell: bash
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - run: ruby .github/scripts/release.rb verify
+      - name: Install and test the exact prebuilt gem
         env:
-          SMOKE_VALUE: World
+          GEM_PLATFORM: ${{ matrix.platform }}
         run: |
-          gem install --local --ignore-dependencies pkg/*.gem
-          ruby -e 'require "dotenvx"; abort unless Dotenvx.parse("spec/fixtures/process_env.env", ignore: false) == {"HELLO" => "World"}'
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.4"
-      - name: Test packaged gem on a newer Ruby
-        shell: bash
-        env:
-          SMOKE_VALUE: World
-        run: |
-          gem install --local --ignore-dependencies pkg/*.gem
-          ruby -e 'require "dotenvx"; abort unless Dotenvx.parse("spec/fixtures/process_env.env", ignore: false) == {"HELLO" => "World"}'
-      - uses: actions/upload-artifact@v7
-        with:
-          name: gem-${{ matrix.artifact }}
-          path: pkg/*.gem
-
-  source-gem:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.4"
-      - name: Check tag version
-        shell: bash
-        run: |
-          expected="${GITHUB_REF_NAME#v}"
-          actual="$(ruby -Ilib -r dotenvx/version -e 'print Dotenvx::VERSION')"
-          test "$actual" = "$expected"
-      - name: Build source gem
-        run: |
-          mkdir -p pkg
-          gem build dotenvx.gemspec
-          mv dotenvx-*.gem pkg/
-      - uses: actions/upload-artifact@v7
-        with:
-          name: gem-source
-          path: pkg/*.gem
-
-  rails-gem:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.4"
-      - name: Check tag version
-        shell: bash
-        run: |
-          expected="${GITHUB_REF_NAME#v}"
-          actual="$(ruby -Ilib -r dotenvx/version -e 'print Dotenvx::VERSION')"
-          test "$actual" = "$expected"
-      - name: Build Rails gem
-        run: |
-          mkdir -p pkg
-          gem build dotenvx-rails.gemspec
-          mv dotenvx-rails-*.gem pkg/
-          gem specification pkg/dotenvx-rails-*.gem
-      - uses: actions/upload-artifact@v7
-        with:
-          name: gem-rails
-          path: pkg/*.gem
+          version="${RELEASE_TAG#v}"
+          gem install --local --no-document "pkg/dotenvx-$version-$GEM_PLATFORM.gem"
+          ruby .github/scripts/test-native.rb "$version"
 
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [native-gems, source-gem, rails-gem]
-    runs-on: ubuntu-latest
+    needs: [validate, test]
+    if: github.event_name == 'push' || inputs.publish == true
+    runs-on: ubuntu-24.04
     environment: release
+    concurrency: dotenvx-ruby-publish
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/checkout@v6
         with:
-          pattern: gem-*
-          path: pkg
-          merge-multiple: true
+          ref: ${{ env.RELEASE_TAG }}
+          persist-credentials: false
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4"
-      - name: Configure RubyGems credentials
-        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
-      - name: Publish platform gems
-        run: |
-          for gem in pkg/*.gem; do
-            gem push "$gem"
-          done
+          ruby-version: '3.4'
+      - run: ruby .github/scripts/release.rb verify
+      - uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+      - name: Publish gems using RubyGems OIDC
+        env:
+          PUBLISH: ${{ inputs.publish }}
+        run: ruby .github/scripts/release.rb publish
