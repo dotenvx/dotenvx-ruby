@@ -1,3 +1,3 @@
 module Dotenvx
-  VERSION = "4.0.6"
+  VERSION = "5.1.7"
 end

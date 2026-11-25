@@ -1,83 +1,77 @@
-[![dotenvx](https://dotenvx.com/better-banner.png)](https://dotenvx.com)
+[![dotenvx](https://dotenvx.com/banner.png?v2)](https://dotenvx.com)
 
-*a secure dotenv–from the creator of [`dotenv`](https://github.com/motdotla/dotenv).*
+*A secure dotenv*–from the creator of [`dotenv`](https://github.com/motdotla/dotenv).
 
-`dotenvx` loads plaintext and encrypted dotenv files through the shared
-[`dotenvx-primitives`](https://crates.io/crates/dotenvx-primitives) Rust
-implementation. The native extension is bundled in the gem; users do not need
-Node.js, a dotenvx CLI, or a Rust toolchain.
+* Encrypt
+* Commit
+* Ship
 
-## Install
+[Install](https://dotenvx.com/docs/install) · [Quickstart](https://dotenvx.com/docs/quickstart)
+
+## Quickstart
 
 ```sh
 gem install dotenvx
 ```
 
-Or add it to a Gemfile:
-
-```ruby
-gem "dotenvx"
-```
-
-## Use
-
-Load `.env` from the current directory:
-
-```ruby
-require "dotenvx/load"
-```
-
-Or load explicitly:
+`index.rb`
 
 ```ruby
 require "dotenvx"
 
 Dotenvx.load
-Dotenvx.load(".env.local", ".env")
+
+puts "Hello #{ENV["HELLO"]}"
 ```
 
-Existing environment variables win by default:
+&nbsp;
 
-```ruby
-Dotenvx.load(".env")
+## Usage
+
+*Install* dotenvx.
+
+```sh
+$ curl -sfS https://dotenvx.sh | sh
+◈ installed (2.38.2:/usr/local/bin/dotenvx)
 ```
 
-To replace existing values:
+*Encrypt* your secrets in `.env` files. The values become ciphertext and only your private key can unlock them.
 
-```ruby
-Dotenvx.load(".env", overwrite: true)
-Dotenvx.overwrite(".env")
+```sh
+$ dotenvx encrypt
+◈ encrypted .env (039 BCA) via .env.keys ⛉
 ```
 
-Parse without changing `ENV`:
+*Commit* your encrypted `.env` files with your code. It's safe. Now you can securely share secrets through git.
 
-```ruby
-values = Dotenvx.parse(".env")
+```sh
+$ git add .env
+$ git commit -m "encrypt .env"
 ```
 
-Raise when a file is missing:
+*Ship* your code and secrets together. Dotenvx uses your private key to decrypt and inject your secrets just-in-time to your code.
 
-```ruby
-Dotenvx.load!(".env")
+```sh
+$ ruby index.rb
+⟐ injected env (2) from .env (039 BCA) via .env.keys ⛉
 ```
 
-Require configuration keys:
+&nbsp;
 
-```ruby
-Dotenvx.require_keys("DATABASE_URL", "SECRET_KEY")
-```
+## Design
 
-Encrypted values are decrypted automatically when the matching private key is
-available through the process environment, `<filename>.keys`, or `.env.keys`.
+Three widely used and proven primitives make up Dotenvx's design. Git, .env, and secp256k1.
 
-## Native platforms
+We chose git because it is the best way to deliver digital goods. It is the container ship of the digital world. All code travels on its ships. Why not secrets? Why invent an inferior secrets delivery mechanism when the world class one is right there at your fingertips.
 
-Tagged releases publish variants of the same `dotenvx` gem for:
+We chose .env because it is the open standard for loading secrets into code. It represents environment variables, the core primitive that all secrets end up injected into at runtime of code.
 
-- Linux x86-64
-- Linux ARM64
-- macOS Intel
-- macOS Apple Silicon
-- Windows x64
+Lastly, we needed to choose an encryption algorithm. Encryption of the values inside the .env file would allow us to place those values with code, leveraging git's distribution advantages while still following the twelve-factor config – by separating the decryption key from the code (environment).
 
-RubyGems selects the correct variant during `gem install dotenvx`.
+It was important that we choose a proven, simple, asymmetric standard with small keys. We chose secp256k1, battle-tested by Bitcoin for more than seventeen years. We made cryptography an opinionated choice so developers wouldn't have to. Encryption just worked.
+
+The result is a system built entirely from primitives, developers already understand, and infrastructure they already use. Secrets can travel with code without becoming part of the code. Git distributes them, .env defines how apps consume them, and secp256k1 keeps their values unreadable. The kicker, all this works by setting a single private key on your infrastructure - no more risky async coordination of secrets, no more centralized downtime risk. Your secrets are always just there with your code, ready to be unlocked at runtime.
+
+[Read the whitepaper →](https://dotenvx.com/dotenvx.pdf?v=README)
+
+&nbsp;

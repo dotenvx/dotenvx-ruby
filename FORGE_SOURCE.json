@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/dotenvx/forge",
+  "commit": "38b9083ad4c23ba56a2fd4f09394896b7130bcb2",
+  "tag": "ruby-v5.1.7",
+  "version": "5.1.7",
+  "gems": {
+    "dotenvx-5.1.7-aarch64-linux.gem": "ea8eac028de50951ccc34e51f02a22b02e1478bed37d5fe1322d5e0be51f1656",
+    "dotenvx-5.1.7-arm64-darwin.gem": "f74e6f1c3883d3bf5ec50f7a577bd2380c9e24b0cb07d2070d40792299f8c5bf",
+    "dotenvx-5.1.7-x86_64-darwin.gem": "94af5f43d51933145bed556de599441b26fdecb629e00610291daafb20114dd3",
+    "dotenvx-5.1.7-x86_64-linux.gem": "e579e92d9957d77cc9b22ffa73e2934294bd18eac83ae2065a3628651e2ef0fa",
+    "dotenvx-rails-5.1.7.gem": "fce51da36ab9cfc9153d1896d92c836b399ebdb4167538091f2b8eec0582af67"
+  }
+}

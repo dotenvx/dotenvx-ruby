@@ -1,3 +1,0 @@
-[workspace]
-members = ["ext/dotenvx"]
-resolver = "2"

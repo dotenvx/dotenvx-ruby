@@ -2,18 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [Unreleased](https://github.com/dotenvx/dotenvx-ruby/compare/v4.0.5...main)
+## Unreleased
 
-## [4.0.5](https://github.com/dotenvx/dotenvx-ruby/compare/v4.0.4...v4.0.5)
+## 4.0.5
 
 - Continue after parse and decryption errors by default, with strict and
   error-code ignore options for callers that need them.
 
-## [4.0.4](https://github.com/dotenvx/dotenvx-ruby/compare/v4.0.3...v4.0.4)
+## 4.0.4
 
 - Report the unique variables injected from readable dotenv files.
 
-## [4.0.0](https://github.com/dotenvx/dotenvx-ruby/compare/v0.0.2...v4.0.0)
+## 4.0.0
 
 - Load plaintext and encrypted dotenv files through `dotenvx-primitives`.
 - Bundle the Rust implementation as a Magnus native extension.
